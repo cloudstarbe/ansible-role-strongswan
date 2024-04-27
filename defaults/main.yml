@@ -1,5 +1,8 @@
 ---
 # defaults file for strongswan
+strongswan_aa_complain:
+  - /usr/lib/ipsec/charon
+  - /usr/lib/ipsec/stroke
 
 strongswan_conn_default:
   auto: add
@@ -26,3 +29,8 @@ strongswan_conn: []
 #     address: remote_address
 #     # further right-hand options here
 #   secret: abcde...z
+
+#strongswan_routes:
+#  - dest: 10.1.1.0/24
+#    via: 10.2.2.254
+#    int: ens5

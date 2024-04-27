@@ -2,3 +2,7 @@
 # Debian-specific vars file for strongswan
 
 strongswan_config_base: /etc
+
+strongswan_packages:
+  - strongswan
+  - apparmor-utils

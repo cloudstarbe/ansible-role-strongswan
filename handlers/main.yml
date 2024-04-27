@@ -1,7 +1,17 @@
 ---
 # handlers file for strongswan
 
-- name: restart strongswan
-  service:
-    name=strongswan
-    state=restarted
+- name: Restart strongswan
+  ansible.builtin.service:
+    name: strongswan-starter
+    state: restarted
+
+- name: Reload systemctl
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+
+- name: Restart persistent-routes
+  ansible.builtin.systemd_service:
+    name: persistent-route
+    state: restarted
+    enabled: true

@@ -1,10 +1,25 @@
 ---
 # Debian-specific task file for strongswan
 
-- include_vars: debian.yml
+- name: Import the Debian vars
+  ansible.builtin.include_vars: debian.yml
+
+- name: Apparmor | List profiles
+  ansible.builtin.shell:
+    cmd: >
+      aa-status --json | jq .profiles | jq to_entries
+  register: apparmor_profiles
+  changed_when: false
+
+#- name: Apparmor | Complain profiles
+#  ansible.builtin.command:
+#    cmd: >
+#      aa-complain {{ item }}
+#  loop: "{{ strongswan_aa_complain }}"
+#  when: apparmor_profiles.find({'key': item}).value != "complain"
 
 - name: Install strongSwan
-  apt:
+  ansible.builtin.apt:
     name: "{{ item }}"
     state: present
   with_items:

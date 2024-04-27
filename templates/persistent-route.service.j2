@@ -1,0 +1,11 @@
+[Unit]
+Description=Persistent Routes for strongswan
+
+[Service]
+Type=simple
+{% for routes in strongswan_routes %}
+ExecStart=/sbin/ip route add {{ routes.dest }} via {{ routes.via }} dev {{ routes.dev }}
+{% endfor %}
+
+[Install]
+WantedBy=multi-user.target

@@ -1,49 +1,85 @@
 ---
 # config-specific task file for strongswan
+- name: Set required sysctl settings
+  ansible.posix.sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    sysctl_set: true
+    state: present
+    reload: true
+  loop: "{{ sysctl_config | dict2items }}"
+  vars:
+    sysctl_config:
+      net.ipv4.ip_forward: 1
+      net.ipv4.conf.all.accept_redirects: 0
+      net.ipv4.conf.all.send_redirects: 0
 
 - name: Create config and secrets fragment directories
-  file:
+  ansible.builtin.file:
     path: "{{ strongswan_config_base }}/{{ item }}"
     state: directory
     owner: root
     group: root
-    mode: 0750
+    mode: '0750'
   with_items:
     - ipsec.conf.d
     - ipsec.secrets.d
 
 - name: Configure strongSwan core settings
-  template:
+  ansible.builtin.template:
     src: "{{ item }}.j2"
     dest: "{{ strongswan_config_base }}/{{ item }}"
     owner: root
     group: root
-    mode: 0640
+    mode: '0640'
   notify:
-    restart strongswan
+    - Restart strongswan
   with_items:
     - ipsec.conf
     - ipsec.secrets
 
 - name: Configure strongSwan default connection settings
-  template:
+  ansible.builtin.template:
     src: defaults.conf.j2
     dest: "{{ strongswan_config_base }}/ipsec.conf.d/00-defaults.conf"
     owner: root
     group: root
-    mode: 0640
+    mode: '0640'
   notify:
-    restart strongswan
+    - Restart strongswan
 
 - name: Configure strongSwan per-connection settings
-  template:
+  ansible.builtin.template:
     src: "connection.{{ item.1 }}.j2"
     dest: "{{ strongswan_config_base }}/ipsec.{{ item.1 }}.d/{{ item.0.priority | default(99) }}-{{ item.0.name }}.{{ item.1 }}"
     owner: root
     group: root
-    mode: 0640
+    mode: '0640'
   with_nested:
     - "{{ strongswan_conn }}"
-    - [ 'conf', 'secrets' ]
+    - ['conf']
   notify:
-    restart strongswan
+    - Restart strongswan
+
+- name: Configure strongSwan per-connection settings
+  ansible.builtin.template:
+    src: "connection.{{ item.1 }}.j2"
+    dest: "{{ strongswan_config_base }}/ipsec.{{ item.1 }}.d/{{ item.0.priority | default(99) }}-{{ item.0.name }}.{{ item.1 }}"
+    owner: root
+    group: root
+    mode: '0600'
+  with_nested:
+    - "{{ strongswan_conn }}"
+    - ['secrets']
+  notify:
+    - Restart strongswan
+
+- name: Add Static Route for VPN
+  ansible.builtin.template:
+    src: persistent-route.service.j2
+    dest: /etc/systemd/system/persistent-route.service
+    mode: '0644'
+  notify:
+    - Reload systemctl
+    - Restart persistent-routes
+  when: strongswan_routes is defined and strongswan_routes | length
